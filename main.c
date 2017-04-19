@@ -51,18 +51,6 @@ static void led_on(bool on) {
 	}
 }
 
-static void on_wifi_event(enum mgos_wifi_status event, void *data) {
-	(void) data;
-	switch (event) {
-		case MGOS_WIFI_IP_ACQUIRED:
-			break;
-		case MGOS_WIFI_CONNECTED:
-			break;
-		case MGOS_WIFI_DISCONNECTED:
-			break;
-	}
-}
-
 static void sonoff_relay_handler(struct mg_rpc_request_info *ri, void *cb_arg,
                                  struct mg_rpc_frame_info *fi, struct mg_str args) {
 	struct mbuf fb;
@@ -191,8 +179,6 @@ static void sonoff_toggle() {
 }
 
 enum mgos_app_init_result mgos_app_init(void) {
-	mgos_wifi_add_on_change_cb(on_wifi_event, 0);
-
 	// Set LED and Relay pins to outputs and off
 	mgos_gpio_set_mode(13, MGOS_GPIO_MODE_OUTPUT);
 	mgos_gpio_write(13, true);
