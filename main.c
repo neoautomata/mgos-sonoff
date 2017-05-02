@@ -13,7 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-
 #include <stdio.h>
 
 #include "common/cs_dbg.h"
@@ -26,11 +25,26 @@
 #include "fw/src/mgos_rpc.h"
 #include "fw/src/mgos_wifi.h"
 
-static void* TURN_ON = "n";
-static void* TURN_OFF = "f";
-static void* GET_STATE = "s";
-static void* ENABLE = "e";
-static void* DISABLE = "d";
+// The following is a hack: https://github.com/cesanta/mongoose-os/issues/245
+#undef JSON_OUT_MBUF
+#define JSON_OUT_MBUF(mbuf_addr)             \
+  {                                          \
+    mg_json_printer_mbuf, {                  \
+      { (char *)((void *) mbuf_addr), 0, 0 } \
+    }                                        \
+  }
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+enum action {
+	TURN_ON,
+	TURN_OFF,
+	GET_STATE,
+	ENABLE,
+	DISABLE
+};
 
 static bool sonoff_led_disabled = false;
 static bool sonoff_button_disabled = false;
@@ -59,25 +73,31 @@ static void sonoff_relay_handler(struct mg_rpc_request_info *ri, void *cb_arg,
 	struct sys_config *cfg = get_cfg();
 
 	int err = 0;
-	if (cb_arg == TURN_ON) {
+	enum action act =
+		#ifdef __cplusplus
+			reinterpret_cast<action &>(cb_arg);
+		#else
+			(enum action)cb_arg;
+		#endif
+	if (act == TURN_ON) {
 		led_on(true);
 
 		// turn the relay on by setting it high
 		mgos_gpio_write(12, true);
-	} else if (cb_arg == TURN_OFF) {
+	} else if (act == TURN_OFF) {
 		led_on(false);
 
 		// turn the relay on by setting it low
 		mgos_gpio_write(12, false);
-	} else {
+	} else if (act != GET_STATE) {
 		err = 500;
-		json_printf(&out, "no or invalid action provided to callback");
+		json_printf(&out, "no or invalid action provided");
 	}
 
 	if (err == 0) {
 		json_printf(&out, "{device_id: %Q, device_type: sonoff, relay_on: %d}", cfg->device.id, mgos_gpio_read(12) ? 1 : 0);
 		mg_rpc_send_responsef(ri, "%.*s", fb.len, fb.buf);
-		if (cb_arg != GET_STATE && strlen(cfg->sonoff.mqtt_topic) > 0)
+		if (act != GET_STATE && strlen(cfg->sonoff.mqtt_topic) > 0)
 			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len);
 	} else {
 		mg_rpc_send_errorf(ri, err, "%.*s", fb.len, fb.buf);
@@ -98,11 +118,17 @@ static void sonoff_button_handler(struct mg_rpc_request_info *ri, void *cb_arg,
 	struct sys_config *cfg = get_cfg();
 
 	int err = 0;
-	if (cb_arg == ENABLE) {
+	enum action act =
+		#ifdef __cplusplus
+			reinterpret_cast<action &>(cb_arg);
+		#else
+			(enum action)cb_arg;
+		#endif
+	if (act == ENABLE) {
 		sonoff_button_disabled = false;
-	} else if (cb_arg == DISABLE) {
+	} else if (act == DISABLE) {
 		sonoff_button_disabled = true;
-	} else {
+	} else if (act != GET_STATE) {
 		err = 500;
 		json_printf(&out, "no or invalid action provided to callback");
 	}
@@ -110,7 +136,7 @@ static void sonoff_button_handler(struct mg_rpc_request_info *ri, void *cb_arg,
 	if (err == 0) {
 		json_printf(&out, "{device_id: %Q, device_type: sonoff, button_disabled: %d}", cfg->device.id, sonoff_button_disabled ? 1 : 0);
 		mg_rpc_send_responsef(ri, "%.*s", fb.len, fb.buf);
-		if (cb_arg != GET_STATE && strlen(cfg->sonoff.mqtt_topic) > 0)
+		if (act != GET_STATE && strlen(cfg->sonoff.mqtt_topic) > 0)
 			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len);
 	} else {
 		mg_rpc_send_errorf(ri, err, "%.*s", fb.len, fb.buf);
@@ -131,13 +157,19 @@ static void sonoff_led_handler(struct mg_rpc_request_info *ri, void *cb_arg,
 	struct sys_config *cfg = get_cfg();
 
 	int err = 0;
-	if (cb_arg == ENABLE) {
+	enum action act =
+		#ifdef __cplusplus
+			reinterpret_cast<action &>(cb_arg);
+		#else
+			(enum action)cb_arg;
+		#endif
+	if (act == ENABLE) {
 		sonoff_led_disabled = false;
 		led_on(mgos_gpio_read(12) ? 1 : 0);
-	} else if (cb_arg == DISABLE) {
+	} else if (act == DISABLE) {
 		sonoff_led_disabled = true;
 		led_on(false);
-	} else {
+	} else if (act != GET_STATE) {
 		err = 500;
 		json_printf(&out, "no or invalid action provided to callback");
 	}
@@ -145,7 +177,7 @@ static void sonoff_led_handler(struct mg_rpc_request_info *ri, void *cb_arg,
 	if (err == 0) {
 		json_printf(&out, "{device_id: %Q, device_type: sonoff, led_disabled: %d}", cfg->device.id, sonoff_led_disabled ? 1 : 0);
 		mg_rpc_send_responsef(ri, "%.*s", fb.len, fb.buf);
-		if (cb_arg != GET_STATE && strlen(cfg->sonoff.mqtt_topic) > 0)
+		if (act != GET_STATE && strlen(cfg->sonoff.mqtt_topic) > 0)
 			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len);
 	} else {
 		mg_rpc_send_errorf(ri, err, "%.*s", fb.len, fb.buf);
@@ -158,7 +190,7 @@ static void sonoff_led_handler(struct mg_rpc_request_info *ri, void *cb_arg,
 	(void) fi;
 }
 
-static void sonoff_toggle() {
+static void sonoff_toggle(int pin, void *arg) {
 	// Skip if the button is disabled.
 	if (sonoff_button_disabled)
 		return;
@@ -176,6 +208,8 @@ static void sonoff_toggle() {
 		mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len);
 	}
 
+	(void) pin;
+	(void) arg;
 }
 
 enum mgos_app_init_result mgos_app_init(void) {
@@ -187,20 +221,24 @@ enum mgos_app_init_result mgos_app_init(void) {
 
 	// register the sonoff RPC handlers
 	struct mg_rpc *c = mgos_rpc_get_global();
-	mg_rpc_add_handler(c, "Sonoff.Relay.On", "{}", sonoff_relay_handler, TURN_ON);
-	mg_rpc_add_handler(c, "Sonoff.Relay.Off", "{}", sonoff_relay_handler, TURN_OFF);
-	mg_rpc_add_handler(c, "Sonoff.Relay.Status", "{}", sonoff_relay_handler, GET_STATE);
+	mg_rpc_add_handler(c, "Sonoff.Relay.On", "{}", sonoff_relay_handler, (void *)TURN_ON);
+	mg_rpc_add_handler(c, "Sonoff.Relay.Off", "{}", sonoff_relay_handler, (void *)TURN_OFF);
+	mg_rpc_add_handler(c, "Sonoff.Relay.Status", "{}", sonoff_relay_handler, (void *)GET_STATE);
 	
-	mg_rpc_add_handler(c, "Sonoff.Button.Enable", "{}", sonoff_button_handler, ENABLE);
-	mg_rpc_add_handler(c, "Sonoff.Button.Disable", "{}", sonoff_button_handler, DISABLE);
-	mg_rpc_add_handler(c, "Sonoff.Button.Status", "{}", sonoff_button_handler, GET_STATE);
+	mg_rpc_add_handler(c, "Sonoff.Button.Enable", "{}", sonoff_button_handler, (void *)ENABLE);
+	mg_rpc_add_handler(c, "Sonoff.Button.Disable", "{}", sonoff_button_handler, (void *)DISABLE);
+	mg_rpc_add_handler(c, "Sonoff.Button.Status", "{}", sonoff_button_handler, (void *)GET_STATE);
 	
-	mg_rpc_add_handler(c, "Sonoff.LED.Enable", "{}", sonoff_led_handler, ENABLE);
-	mg_rpc_add_handler(c, "Sonoff.LED.Disable", "{}", sonoff_led_handler, DISABLE);
-	mg_rpc_add_handler(c, "Sonoff.LED.Status", "{}", sonoff_led_handler, GET_STATE);
+	mg_rpc_add_handler(c, "Sonoff.LED.Enable", "{}", sonoff_led_handler, (void *)ENABLE);
+	mg_rpc_add_handler(c, "Sonoff.LED.Disable", "{}", sonoff_led_handler, (void *)DISABLE);
+	mg_rpc_add_handler(c, "Sonoff.LED.Status", "{}", sonoff_led_handler, (void *)GET_STATE);
 
 	// register a button handler to toggle state
-	mgos_gpio_set_button_handler(0, MGOS_GPIO_PULL_UP, MGOS_GPIO_INT_EDGE_ANY, 500, sonoff_toggle, NULL);
+	mgos_gpio_set_button_handler(0, MGOS_GPIO_PULL_UP, MGOS_GPIO_INT_EDGE_ANY, 500, sonoff_toggle, (void *)NULL);
 
 	return MGOS_APP_INIT_SUCCESS;
 }
+
+#ifdef __cplusplus
+}
+#endif
