@@ -13,7 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -98,7 +97,7 @@ static void sonoff_relay_handler(struct mg_rpc_request_info *ri, void *cb_arg,
 		json_printf(&out, "{device_id: %Q, device_type: sonoff, relay_on: %d}", cfg->device.id, mgos_gpio_read(12) ? 1 : 0);
 		mg_rpc_send_responsef(ri, "%.*s", fb.len, fb.buf);
 		if (act != GET_STATE && strlen(cfg->sonoff.mqtt_topic) > 0)
-			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len);
+			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len, 0);
 	} else {
 		mg_rpc_send_errorf(ri, err, "%.*s", fb.len, fb.buf);
 	}
@@ -137,7 +136,7 @@ static void sonoff_button_handler(struct mg_rpc_request_info *ri, void *cb_arg,
 		json_printf(&out, "{device_id: %Q, device_type: sonoff, button_disabled: %d}", cfg->device.id, sonoff_button_disabled ? 1 : 0);
 		mg_rpc_send_responsef(ri, "%.*s", fb.len, fb.buf);
 		if (act != GET_STATE && strlen(cfg->sonoff.mqtt_topic) > 0)
-			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len);
+			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len, 0);
 	} else {
 		mg_rpc_send_errorf(ri, err, "%.*s", fb.len, fb.buf);
 	}
@@ -178,7 +177,7 @@ static void sonoff_led_handler(struct mg_rpc_request_info *ri, void *cb_arg,
 		json_printf(&out, "{device_id: %Q, device_type: sonoff, led_disabled: %d}", cfg->device.id, sonoff_led_disabled ? 1 : 0);
 		mg_rpc_send_responsef(ri, "%.*s", fb.len, fb.buf);
 		if (act != GET_STATE && strlen(cfg->sonoff.mqtt_topic) > 0)
-			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len);
+			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len, 0);
 	} else {
 		mg_rpc_send_errorf(ri, err, "%.*s", fb.len, fb.buf);
 	}
@@ -205,7 +204,7 @@ static void sonoff_toggle(int pin, void *arg) {
 		struct json_out out = JSON_OUT_MBUF(&fb);
 		mbuf_init(&fb, 128);
 		json_printf(&out, "{device_id: %Q, device_type: sonoff, relay_on: %d}", cfg->device.id, mgos_gpio_read(12) ? 1 : 0);
-		mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len);
+		mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len, 0);
 	}
 
 	(void) pin;
