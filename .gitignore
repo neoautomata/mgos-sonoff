@@ -1,3 +1,9 @@
+# mos build data
+build/
+confs/
+fs/*
+src/conf_schema.yaml
+
 # Object files
 *.o
 *.ko

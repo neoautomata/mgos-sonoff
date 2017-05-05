@@ -34,7 +34,7 @@ extern "C" {
 #define JSON_OUT_MBUF(mbuf_addr)             \
   {                                          \
     mg_json_printer_mbuf, {                  \
-      { (char *)((void *) mbuf_addr), 0, 0 } \
+      { (char *)mbuf_addr, 0, 0 } \
     }                                        \
   }
 

@@ -1,8 +1,6 @@
 [
   ["http.enable", true],
 
-  ["aws.shadow.enable", false],
-
   ["mqtt.enable", true],
   ["mqtt.server", "<mqtt_address>:<mqtt_port>"],
   ["mqtt.user", "<mqtt_username>"], # optional
