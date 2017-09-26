@@ -22,20 +22,9 @@ extern "C" {
 #include "common/json_utils.h"
 #include "common/platform.h"
 #include "frozen/frozen.h"
-#include "fw/src/mgos_app.h"
-#include "fw/src/mgos_gpio.h"
-#include "fw/src/mgos_mqtt.h"
-#include "fw/src/mgos_rpc.h"
-#include "fw/src/mgos_wifi.h"
-
-// The following is a hack: https://github.com/cesanta/mongoose-os/issues/245
-#undef JSON_OUT_MBUF
-#define JSON_OUT_MBUF(mbuf_addr)             \
-  {                                          \
-    mg_json_printer_mbuf, {                  \
-      { (char *)mbuf_addr, 0, 0 } \
-    }                                        \
-  }
+#include "mgos.h"
+#include "mgos_mqtt.h"
+#include "mgos_rpc.h"
 
 enum action {
 	TURN_ON,
@@ -97,7 +86,7 @@ static void sonoff_relay_handler(struct mg_rpc_request_info *ri, void *cb_arg,
 		json_printf(&out, "{device_id: %Q, device_type: sonoff, relay_on: %d}", cfg->device.id, mgos_gpio_read(12) ? 1 : 0);
 		mg_rpc_send_responsef(ri, "%.*s", fb.len, fb.buf);
 		if (act != GET_STATE && strlen(cfg->sonoff.mqtt_topic) > 0)
-			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len, 0);
+			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len, 0, false);
 	} else {
 		mg_rpc_send_errorf(ri, err, "%.*s", fb.len, fb.buf);
 	}
@@ -136,7 +125,7 @@ static void sonoff_button_handler(struct mg_rpc_request_info *ri, void *cb_arg,
 		json_printf(&out, "{device_id: %Q, device_type: sonoff, button_disabled: %d}", cfg->device.id, sonoff_button_disabled ? 1 : 0);
 		mg_rpc_send_responsef(ri, "%.*s", fb.len, fb.buf);
 		if (act != GET_STATE && strlen(cfg->sonoff.mqtt_topic) > 0)
-			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len, 0);
+			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len, 0, false);
 	} else {
 		mg_rpc_send_errorf(ri, err, "%.*s", fb.len, fb.buf);
 	}
@@ -177,7 +166,7 @@ static void sonoff_led_handler(struct mg_rpc_request_info *ri, void *cb_arg,
 		json_printf(&out, "{device_id: %Q, device_type: sonoff, led_disabled: %d}", cfg->device.id, sonoff_led_disabled ? 1 : 0);
 		mg_rpc_send_responsef(ri, "%.*s", fb.len, fb.buf);
 		if (act != GET_STATE && strlen(cfg->sonoff.mqtt_topic) > 0)
-			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len, 0);
+			mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len, 0, false);
 	} else {
 		mg_rpc_send_errorf(ri, err, "%.*s", fb.len, fb.buf);
 	}
@@ -204,7 +193,7 @@ static void sonoff_toggle(int pin, void *arg) {
 		struct json_out out = JSON_OUT_MBUF(&fb);
 		mbuf_init(&fb, 128);
 		json_printf(&out, "{device_id: %Q, device_type: sonoff, relay_on: %d}", cfg->device.id, mgos_gpio_read(12) ? 1 : 0);
-		mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len, 0);
+		mgos_mqtt_pub(cfg->sonoff.mqtt_topic, fb.buf, fb.len, 0, false);
 	}
 
 	(void) pin;

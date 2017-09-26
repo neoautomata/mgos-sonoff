@@ -1,28 +1,47 @@
-version: "1.0"
-arch: esp8266
-mongoose_os_version: master
+platform: esp8266
+author: neoautomata
+description: A firmware for a Sonoff IoT switch.
+version: 1.0
+
+libs_version: ${mos.version}
+modules_version: ${mos.version}
+mongoose_os_version: ${mos.version}
+
+# Optional. List of tags for online search.
+tags:
+  - c
+
+# List of files / directories with C sources. No slashes at the end of dir names.
 sources:
-- src
+  - src
+
+# List of dirs. Files from these dirs will be copied to the device filesystem
 filesystem:
-- fs
-extra_files: []
-skeleton_version: 2017-03-17
-ffi_symbols: []
-build_vars:
-  APP_CONF_SCHEMA: src/conf_schema.yaml
-  MGOS_DEBUG_UART: 0
-  MGOS_ENABLE_ARDUINO_API: 0
-  MGOS_ENABLE_ATCA_SERVICE: 1
-  MGOS_ENABLE_AWS_SHADOW: 0
-  MGOS_ENABLE_CONFIG_SERVICE: 1
-  MGOS_ENABLE_DNS_SD: 0
-  MGOS_ENABLE_FILESYSTEM_SERVICE: 1
-  MGOS_ENABLE_FILE_UPLOAD: 1
-  MGOS_ENABLE_MQTT: 1
-  MGOS_ENABLE_RPC: 1
-  MGOS_ENABLE_RPC_CHANNEL_UART: 1
-  MGOS_ENABLE_UPDATER: 1
-  MGOS_ENABLE_UPDATER_POST: 1
-  MGOS_ENABLE_UPDATER_RPC: 1
-  MGOS_ENABLE_WEB_CONFIG: 0
-  SSL: mbedTLS
+  - fs
+
+config_schema:
+  - ["mqtt.enable", true]
+  - ["mqtt.server", "cloud.techspot:1883"]
+  - ["wifi.sta.enable", true]
+  - ["wifi.sta.ssid", "techspot"]
+  - ["wifi.sta.pass", "techspothotspot"]
+  - ["wifi.ap.enable", true]
+  - ["wifi.ap.ssid", "sonoff-blip"]
+  - ["wifi.ap.pass", "techspotdemo"]
+  - ["wifi.ap.hidden", false]
+  - ["wifi.ap.channel", 6]
+  - ["sonoff", "o", {"title": "Sonoff specific settings."}]
+  - ["sonoff.mqtt_topic", "s", "sonoffs", {"title": "The MQTT topic changes should be broadcast on. Message will include the device_id."}]
+  - ["device.id", "sonoff-blip"]
+
+#   - origin: https://github.com/mongoose-os-libs/ca-bundle
+libs:
+  - origin: https://github.com/mongoose-os-libs/mqtt
+  - origin: https://github.com/mongoose-os-libs/rpc-mqtt
+  - origin: https://github.com/mongoose-os-libs/rpc-service-config
+  - origin: https://github.com/mongoose-os-libs/rpc-service-fs
+  - origin: https://github.com/mongoose-os-libs/rpc-service-ota
+  - origin: https://github.com/mongoose-os-libs/rpc-uart
+  - origin: https://github.com/mongoose-os-libs/wifi
+
+manifest_version: 2017-05-18
