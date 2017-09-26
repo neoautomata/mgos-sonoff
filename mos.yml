@@ -21,18 +21,18 @@ filesystem:
 
 config_schema:
   - ["mqtt.enable", true]
-  - ["mqtt.server", "cloud.techspot:1883"]
+  - ["mqtt.server", "server:1883"]
   - ["wifi.sta.enable", true]
-  - ["wifi.sta.ssid", "techspot"]
-  - ["wifi.sta.pass", "techspothotspot"]
+  - ["wifi.sta.ssid", "ssid-name"]
+  - ["wifi.sta.pass", "ssid-pass"]
   - ["wifi.ap.enable", true]
-  - ["wifi.ap.ssid", "sonoff-blip"]
-  - ["wifi.ap.pass", "techspotdemo"]
+  - ["wifi.ap.ssid", "ap-ssid-name"]
+  - ["wifi.ap.pass", "ap-ssid-pass"]
   - ["wifi.ap.hidden", false]
   - ["wifi.ap.channel", 6]
   - ["sonoff", "o", {"title": "Sonoff specific settings."}]
   - ["sonoff.mqtt_topic", "s", "sonoffs", {"title": "The MQTT topic changes should be broadcast on. Message will include the device_id."}]
-  - ["device.id", "sonoff-blip"]
+  - ["device.id", "sonoff-name"]
 
 #   - origin: https://github.com/mongoose-os-libs/ca-bundle
 libs:
